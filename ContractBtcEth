@@ -1,0 +1,58 @@
+pragma solidity ^0.8.0;
+
+contract GuessContract {
+    enum Result { Unknown, Up, Down }
+    
+    address public owner;
+    uint public betAmount;
+    Result public result;
+    
+    event BetPlaced(address indexed player, Result indexed guessedResult, uint indexed amount);
+    event ResultAnnounced(Result indexed actualResult);
+    
+    constructor() {
+        owner = msg.sender;
+        betAmount = 0;
+        result = Result.Unknown;
+    }
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only contract owner can call this function");
+        _;
+    }
+    
+    function placeBet(Result guessedResult) external payable {
+        require(betAmount == 0, "Bet has already been placed");
+        require(guessedResult != Result.Unknown, "Invalid result");
+        require(msg.value > 0, "Bet amount must be greater than 0");
+        
+        betAmount = msg.value;
+        result = guessedResult;
+        
+        emit BetPlaced(msg.sender, guessedResult, msg.value);
+    }
+    
+    function announceResult(Result actualResult) external onlyOwner {
+        require(result != Result.Unknown, "Bet has not been placed yet");
+        
+        result = actualResult;
+        
+        emit ResultAnnounced(actualResult);
+    }
+    
+    function claimReward() external {
+        require(result != Result.Unknown, "Result has not been announced yet");
+        
+        if (result == Result.Up && actualResult == Result.Up) {
+            uint rewardAmount = betAmount * 2;
+            payable(msg.sender).transfer(rewardAmount);
+        } else if (result == Result.Down && actualResult == Result.Down) {
+            uint rewardAmount = betAmount * 2;
+            payable(msg.sender).transfer(rewardAmount);
+        }
+        
+        // Reset contract state
+        betAmount = 0;
+        result = Result.Unknown;
+    }
+}
